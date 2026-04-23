@@ -34,12 +34,6 @@ python run.py
 
 ## Demo users
 
-- **Admin:** `admin@aureline.edu` / `admin123`
-- **Teacher:** `teacher@aureline.edu` / `teacher123`
-- **Student:** `student@aureline.edu` / `student123`
-- **Pending Teacher:** `pending.teacher@aureline.edu` / `teacher123`
-- **Pending Student:** `pending.student@aureline.edu` / `student123`
-
 ## Main routes
 
 - `/` public landing page
