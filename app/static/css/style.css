@@ -1,0 +1,54 @@
+:root {
+  --aureline-primary: #1f4e79;
+  --aureline-secondary: #f4b400;
+  --aureline-bg: #f6f9fc;
+  --aureline-text: #1f2937;
+}
+
+body {
+  font-family: Inter, "Segoe UI", sans-serif;
+  color: var(--aureline-text);
+  background: #ffffff;
+}
+
+.aureline-nav,
+.aureline-footer {
+  background: var(--aureline-primary);
+}
+
+.hero-section {
+  background: linear-gradient(180deg, rgba(31, 78, 121, 0.10), rgba(244, 180, 0, 0.08));
+}
+
+.btn-primary {
+  background: var(--aureline-primary);
+  border-color: var(--aureline-primary);
+}
+
+.btn-outline-primary {
+  color: var(--aureline-primary);
+  border-color: var(--aureline-primary);
+}
+
+.login-page {
+  background: var(--aureline-bg);
+  min-height: 70vh;
+}
+
+.table > :not(caption) > * > * {
+  padding: 0.9rem 0.75rem;
+}
+
+.card {
+  overflow: hidden;
+}
+
+pre {
+  white-space: pre-wrap;
+}
+
+@media (max-width: 768px) {
+  .display-5 {
+    font-size: 2.2rem;
+  }
+}

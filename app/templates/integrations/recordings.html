@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Recorded Classes | Aureline Academy{% endblock %}
+{% block content %}
+<section class="py-4">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+      <div>
+        <h1 class="h3 fw-bold mb-1">Recorded Classes</h1>
+        <p class="text-muted mb-0">Class and subject wise video library for replay after online or Zoom sessions.</p>
+      </div>
+      {% if current_user.role == 'admin' %}
+      <a class="btn btn-outline-primary" href="{{ url_for('admin_recordings.index_view') }}">Manage in Admin</a>
+      {% endif %}
+    </div>
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body p-3">
+        <form class="row g-2" method="get">
+          <div class="col-md-4">
+            <select name="class_name" class="form-select">
+              <option value="">All Classes</option>
+              {% for item in classes %}
+              <option value="{{ item }}" {% if class_filter == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2"><button class="btn btn-primary w-100">Filter</button></div>
+        </form>
+      </div>
+    </div>
+    <div class="row g-4">
+      {% for item in recordings %}
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+              <div>
+                <h2 class="h5 fw-bold mb-1">{{ item.title }}</h2>
+                <div class="small text-muted">{{ item.class_name }} · {{ item.subject_label }}</div>
+              </div>
+              <span class="badge text-bg-info">{{ item.recording_date.strftime('%d %b %Y') }}</span>
+            </div>
+            <div class="small text-muted mb-3">Source: {{ item.source|title }}{% if item.duration_minutes %} · {{ item.duration_minutes }} min{% endif %}</div>
+            {% if item.notes %}<p class="small">{{ item.notes }}</p>{% endif %}
+            <a class="btn btn-primary" href="{{ item.video_url }}" target="_blank" rel="noopener">Watch Recording</a>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="col-12"><div class="alert alert-light border">No recorded classes available yet.</div></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

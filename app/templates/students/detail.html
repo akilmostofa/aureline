@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}{{ student.user.full_name }} | Aureline Academy{% endblock %}
+{% block content %}
+<section class="py-4">
+  <div class="container">
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+          <div>
+            <h1 class="h3 fw-bold mb-1">{{ student.user.full_name }}</h1>
+            <div class="text-muted">{{ student.admission_no }} · {{ student.class_name }}{% if student.section %} - {{ student.section }}{% endif %}</div>
+          </div>
+          {% if current_user.role == 'admin' %}
+          <div class="d-flex gap-2">
+            <a class="btn btn-outline-primary" href="{{ url_for('students.edit_student', student_id=student.id) }}">Edit</a>
+            <form method="post" action="{{ url_for('students.delete_student', student_id=student.id) }}" onsubmit="return confirm('Delete this student?');">
+              <button class="btn btn-outline-danger">Delete</button>
+            </form>
+          </div>
+          {% endif %}
+        </div>
+        <div class="row g-4">
+          <div class="col-md-6">
+            <h2 class="h5">Portal</h2>
+            <p class="mb-1"><strong>Email:</strong> {{ student.user.email }}</p>
+            <p class="mb-1"><strong>Phone:</strong> {{ student.user.phone or '—' }}</p>
+            <p class="mb-1"><strong>Fee status:</strong> {{ student.fee_status|title }}</p>
+          </div>
+          <div class="col-md-6">
+            <h2 class="h5">Guardian</h2>
+            <p class="mb-1"><strong>Name:</strong> {{ student.guardian_name or '—' }}</p>
+            <p class="mb-1"><strong>Phone:</strong> {{ student.guardian_phone or '—' }}</p>
+            <p class="mb-1"><strong>Email:</strong> {{ student.parent_email or '—' }}</p>
+          </div>
+          <div class="col-12">
+            <h2 class="h5">Address</h2>
+            <p>{{ student.address or '—' }}</p>
+            <h2 class="h5">Progress Note</h2>
+            <p>{{ student.progress_note or '—' }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

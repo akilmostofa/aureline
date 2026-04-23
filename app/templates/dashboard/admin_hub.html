@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% from 'macros/cards.html' import stat_card %}
+{% block title %}Aureline Control Center{% endblock %}
+{% block content %}
+<section class="py-4">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+      <div>
+        <h1 class="h3 fw-bold mb-1">Aureline Control Center</h1>
+        <p class="text-muted mb-0">Central admin access for registrations, academics, finance, and payment approvals.</p>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-primary" href="{{ url_for('auth.pending_users') }}">Manage Registrations</a>
+        <a class="btn btn-outline-primary" href="{{ url_for('finance.course_requests_admin') }}">Review Course Payments</a>
+        <a class="btn btn-outline-secondary" href="{{ url_for('admin.index') }}">Open Advanced Admin</a>
+        <a class="btn btn-outline-primary" href="{{ url_for('exports.finance_pdf') }}">Finance PDF</a>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      {% for label, value in overview.items() %}
+        {{ stat_card(label.replace('_', ' ')|title, value) }}
+      {% endfor %}
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+          <div class="card-body p-4">
+            <h2 class="h5 fw-bold mb-3">Quick Actions</h2>
+            <div class="list-group">
+              <a class="list-group-item list-group-item-action" href="{{ url_for('students.create_student') }}">Add Student</a>
+              <a class="list-group-item list-group-item-action" href="{{ url_for('teachers.create_teacher') }}">Add Teacher</a>
+              <a class="list-group-item list-group-item-action" href="{{ url_for('courses.create_course') }}">Add Course and Set Fee</a>
+              <a class="list-group-item list-group-item-action" href="{{ url_for('finance.create_invoice') }}">Create Invoice</a>
+              <a class="list-group-item list-group-item-action" href="{{ url_for('communication.create_notice') }}">Publish Notice</a>
+              <a class="list-group-item list-group-item-action" href="{{ url_for('exports.students_pdf') }}">Download Students PDF</a>
+              <a class="list-group-item list-group-item-action" href="{{ url_for('exports.attendance_pdf') }}">Download Attendance PDF</a>
+              <a class="list-group-item list-group-item-action" href="{{ url_for('exports.reports_summary_pdf') }}">Download Reports PDF</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+          <div class="card-body p-4">
+            <h2 class="h5 fw-bold mb-3">Latest Registrations</h2>
+            <ul class="list-group list-group-flush">
+              {% for user in recent_registrations %}
+              <li class="list-group-item px-0 d-flex justify-content-between align-items-start gap-2">
+                <div>
+                  <div class="fw-semibold">{{ user.full_name }}</div>
+                  <div class="small text-muted">{{ user.email }} · {{ user.role|title }}</div>
+                </div>
+                <span class="badge {% if user.approval_status == 'approved' %}text-bg-success{% elif user.approval_status == 'rejected' %}text-bg-danger{% else %}text-bg-warning{% endif %}">{{ user.approval_status|replace('_', ' ')|title }}</span>
+              </li>
+              {% else %}
+              <li class="list-group-item px-0 text-muted">No registrations yet.</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mt-4">
+      <div class="card-body p-4">
+        <h2 class="h5 fw-bold mb-3">Recent Course Payment Activity</h2>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr><th>Request</th><th>Student</th><th>Course</th><th>Fee</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              {% for item in recent_requests %}
+              <tr>
+                <td>{{ item.request_group }}</td>
+                <td>{{ item.requested_for_name or item.requester.full_name }}</td>
+                <td>{{ item.course.code }} - {{ item.course.title }}</td>
+                <td>৳{{ item.course_fee }}</td>
+                <td><span class="badge {% if item.status == 'approved' %}text-bg-success{% elif item.status == 'rejected' %}text-bg-danger{% elif item.status == 'pending' %}text-bg-warning{% else %}text-bg-secondary{% endif %}">{{ item.status|replace('_', ' ')|title }}</span></td>
+              </tr>
+              {% else %}
+              <tr><td colspan="5" class="text-center text-muted py-4">No course payment activity yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

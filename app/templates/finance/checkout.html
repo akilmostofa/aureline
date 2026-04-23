@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% block title %}Payment Checkout | Aureline Academy{% endblock %}
+{% block content %}
+<section class="py-4">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+      <div>
+        <h1 class="h3 fw-bold mb-1">Payment Checkout</h1>
+        <p class="text-muted mb-0">Request {{ group.group }} · একবার gateway বেছে payment করুন, তারপর একবারই PDF slip upload করুন।</p>
+      </div>
+      <a class="btn btn-outline-primary" href="{{ url_for('finance.portal') }}">Back to My Courses & Payments</a>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-5">
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+          <div class="card-body p-4">
+            <h2 class="h5 fw-bold mb-3">Request Summary</h2>
+            <div class="small text-muted mb-2">{{ group.requested_for_name }} · {{ group.requested_class }}</div>
+            <ul class="small mb-3 ps-3">
+              {% for item in group['items'] %}
+              <li>{{ item.course.code }} - {{ item.course.title }} · ৳{{ item.course_fee }}</li>
+              {% endfor %}
+            </ul>
+            <div class="d-flex justify-content-between border-top pt-3">
+              <span class="fw-semibold">Total payable</span>
+              <span class="fw-bold">৳{{ group.total }}</span>
+            </div>
+            <div class="mt-3">
+              <span class="badge {% if group.status == 'approved' %}text-bg-success{% elif group.status == 'rejected' %}text-bg-danger{% elif group.status == 'pending' %}text-bg-warning{% else %}text-bg-secondary{% endif %}">{{ group.status|replace('_', ' ')|title }}</span>
+            </div>
+            {% if group.admin_note %}
+            <div class="alert alert-light mt-3 mb-0 small"><strong>Admin note:</strong> {{ group.admin_note }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4">
+          <div class="card-body p-4">
+            <h2 class="h5 fw-bold mb-3">Choose Payment Gateway</h2>
+            <div class="d-grid gap-2">
+              <a class="btn {% if selected_provider == 'bkash' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{{ url_for('finance.payment_checkout', request_group=group.group, provider='bkash') }}">bKash</a>
+              <a class="btn {% if selected_provider == 'nagad' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{{ url_for('finance.payment_checkout', request_group=group.group, provider='nagad') }}">Nagad</a>
+              <a class="btn {% if selected_provider == 'card' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{{ url_for('finance.payment_checkout', request_group=group.group, provider='card') }}">Card / Online</a>
+              <a class="btn {% if selected_provider == 'bank' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{{ url_for('finance.payment_checkout', request_group=group.group, provider='bank') }}">Bank Transfer</a>
+            </div>
+            <div class="small text-muted mt-3">Gateway credentials can be configured in environment variables for Aureline Academy.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-7">
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+          <div class="card-body p-4">
+            <h2 class="h5 fw-bold mb-3">Payment Instructions</h2>
+            {% if provider_meta and provider_meta.ok %}
+              <div class="alert alert-primary">{{ provider_meta.message }}</div>
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <div class="border rounded-4 p-3 bg-light h-100">
+                    <div class="small text-muted">Pay To</div>
+                    <div class="fw-semibold">{{ provider_meta.pay_to }}</div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="border rounded-4 p-3 bg-light h-100">
+                    <div class="small text-muted">Account / Merchant Name</div>
+                    <div class="fw-semibold">{{ provider_meta.account_name }}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="border rounded-4 p-3 bg-light">
+                <div class="fw-semibold mb-2">Steps</div>
+                <ol class="small mb-0 ps-3">
+                  {% for step in provider_meta.steps %}
+                  <li>{{ step }}</li>
+                  {% endfor %}
+                </ol>
+              </div>
+              {% if provider_meta.checkout_url %}
+              <div class="mt-3">
+                <a class="btn btn-success" href="{{ provider_meta.checkout_url }}" target="_blank" rel="noopener">Open {{ provider_meta.provider_label }} Payment Portal</a>
+                <div class="small text-muted mt-2">This opens your configured live payment portal in a new tab. After completing the payment, return here and upload the PDF receipt.</div>
+              </div>
+              {% endif %}
+            {% else %}
+              <div class="alert alert-warning mb-0">প্রথমে একটি payment gateway বেছে নিন। তারপর এখানেই payment instruction দেখাবে।</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4">
+          <div class="card-body p-4">
+            <h2 class="h5 fw-bold mb-3">Step 3 · Submit Payment Proof</h2>
+            {% if group.status == 'approved' %}
+              <div class="alert alert-success">This request has already been approved by Aureline Admin.</div>
+            {% else %}
+              <div class="small text-muted mb-3">Payment complete করার পর নিচের form-এ একবার PDF slip upload করুন। Submit করার পরে slip-এর একটি copy আপনার email address-এও পাঠানো হবে।</div>
+              <form method="post" action="{{ url_for('finance.submit_payment_proof', request_group=group.group) }}" enctype="multipart/form-data" class="border rounded-4 p-3 bg-light">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label small">Payment Provider</label>
+                    <select class="form-select" name="payment_provider" required>
+                      <option value="">Select</option>
+                      <option value="bkash" {% if selected_provider == 'bkash' or group.payment_provider == 'bkash' %}selected{% endif %}>bKash</option>
+                      <option value="nagad" {% if selected_provider == 'nagad' or group.payment_provider == 'nagad' %}selected{% endif %}>Nagad</option>
+                      <option value="card" {% if selected_provider == 'card' or group.payment_provider == 'card' %}selected{% endif %}>Card / Online</option>
+                      <option value="bank" {% if selected_provider == 'bank' or group.payment_provider == 'bank' %}selected{% endif %}>Bank Transfer</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small">Payment Method</label>
+                    <input class="form-control" type="text" name="payment_method" value="{{ group.payment_method if group.payment_method not in ['awaiting-payment', None] else '' }}" placeholder="wallet / visa / bank slip" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small">Transaction Ref</label>
+                    <input class="form-control" type="text" name="transaction_ref" value="{{ '' if group.transaction_ref == group.group else group.transaction_ref }}" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small">Payer Mobile</label>
+                    <input class="form-control" type="text" name="payer_mobile" value="{{ group.payer_mobile or current_user.phone or '' }}" placeholder="01XXXXXXXXX">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label small">Slip PDF</label>
+                    <input class="form-control" type="file" name="payment_slip" accept="application/pdf,.pdf" {% if group.status != 'pending' %}required{% endif %}>
+                  </div>
+                </div>
+                {% if group.payment_slip_filename %}
+                <div class="mt-3 small">
+                  Current slip: <a href="{{ url_for('finance.download_payment_slip', request_group=group.group) }}">{{ group.payment_slip_filename }}</a>
+                </div>
+                {% endif %}
+                <button class="btn btn-primary mt-3">Submit Payment Proof</button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

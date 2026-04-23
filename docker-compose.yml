@@ -1,0 +1,27 @@
+version: '3.9'
+services:
+  web:
+    build: .
+    ports:
+      - '5000:5000'
+    env_file:
+      - .env
+    environment:
+      FLASK_APP: run.py
+      DATABASE_URL: postgresql://aureline:aureline123@db:5432/aureline
+    command: /bin/sh -c "flask db upgrade && gunicorn -b 0.0.0.0:5000 run:app"
+    depends_on:
+      - db
+      - redis
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: aureline
+      POSTGRES_USER: aureline
+      POSTGRES_PASSWORD: aureline123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  redis:
+    image: redis:7
+volumes:
+  postgres_data:

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Finance | Aureline Academy{% endblock %}
+{% block content %}
+<section class="py-4">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+      <div>
+        <h1 class="h3 fw-bold mb-1">Finance & Invoices</h1>
+        <p class="text-muted mb-0">Track subject-wise tuition billing, collections, and payment approvals in one place.</p>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-outline-primary" href="{{ url_for('exports.finance_pdf', class_name=class_name) }}">Download PDF</a>
+        <a class="btn btn-outline-primary" href="{{ url_for('finance.course_requests_admin') }}">Review Course Payments{% if pending_requests %} <span class="badge text-bg-warning ms-1">{{ pending_requests }}</span>{% endif %}</a>
+        <a class="btn btn-primary" href="{{ url_for('finance.create_invoice') }}">Create Invoice</a>
+      </div>
+    </div>
+
+    <form class="card card-body border-0 shadow-sm rounded-4 mb-3" method="get">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-8"><label class="form-label">Class / Level</label><select class="form-select" name="class_name"><option value="all">All Classes</option>{% for option in class_options %}<option value="{{ option }}" {% if class_name == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select></div>
+        <div class="col-md-4"><button class="btn btn-outline-primary w-100">Apply Filter</button></div>
+      </div>
+    </form>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-3"><div class="card border-0 shadow-sm rounded-4"><div class="card-body"><div class="text-muted small">Outstanding</div><div class="display-6 fw-bold">৳{{ '%.2f'|format(total_due) }}</div></div></div></div>
+      <div class="col-md-3"><div class="card border-0 shadow-sm rounded-4"><div class="card-body"><div class="text-muted small">Collected</div><div class="display-6 fw-bold">৳{{ '%.2f'|format(total_paid) }}</div></div></div></div>
+      <div class="col-md-3"><div class="card border-0 shadow-sm rounded-4"><div class="card-body"><div class="text-muted small">Pending Course Requests</div><div class="display-6 fw-bold">{{ pending_requests }}</div></div></div></div>
+      <div class="col-md-3"><div class="card border-0 shadow-sm rounded-4"><div class="card-body"><div class="text-muted small">Paid Invoices</div><div class="display-6 fw-bold">{{ invoice_status_counts.paid }}</div></div></div></div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-lg-5"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body p-4"><h2 class="h5 fw-bold mb-3">Invoice Status Snapshot</h2><div class="d-flex justify-content-between py-2 border-bottom"><span>Paid</span><strong>{{ invoice_status_counts.paid }}</strong></div><div class="d-flex justify-content-between py-2 border-bottom"><span>Unpaid</span><strong>{{ invoice_status_counts.unpaid }}</strong></div><div class="d-flex justify-content-between py-2 border-bottom"><span>Overdue</span><strong>{{ invoice_status_counts.overdue }}</strong></div><div class="d-flex justify-content-between py-2"><span>Partial</span><strong>{{ invoice_status_counts.partial }}</strong></div></div></div></div>
+      <div class="col-lg-7"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body p-4"><h2 class="h5 fw-bold mb-3">Recent Course Payment Requests</h2><div class="list-group list-group-flush">{% for group in grouped_requests %}<div class="list-group-item px-0"><div class="d-flex justify-content-between gap-3 flex-wrap"><div><div class="fw-semibold">{{ group.group }} · {{ group.requested_for_name or (group.student.user.full_name if group.student else group.requester.full_name) }}</div><div class="small text-muted">{{ group.requested_class or '-' }} · {{ group.payment_provider|default('pending', true)|title }} / {{ group.payment_method or 'awaiting-payment' }}</div></div><div class="text-end"><span class="badge {% if group.status == 'approved' %}text-bg-success{% elif group.status == 'rejected' %}text-bg-danger{% elif group.status == 'pending' %}text-bg-warning{% else %}text-bg-secondary{% endif %}">{{ group.status|replace('_', ' ')|title }}</span><div class="fw-semibold mt-1">৳{{ '%.2f'|format(group.total|float) }}</div></div></div></div>{% else %}<div class="text-muted">No course payment requests yet.</div>{% endfor %}</div></div></div></div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4"><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Invoice</th><th>Student</th><th>Subject</th><th>Billing Month</th><th>Amount</th><th>Due</th><th>Status</th><th class="text-end">Actions</th></tr></thead><tbody>{% for invoice in invoices %}<tr><td><div class="fw-semibold">{{ invoice.invoice_no }}</div><div class="small text-muted">{{ invoice.payment_provider or 'No provider' }}</div></td><td>{{ invoice.student.user.full_name if invoice.student and invoice.student.user else 'Unknown student' }}<div class="small text-muted">{{ invoice.student.class_name if invoice.student else '' }}</div></td><td>{{ invoice.course.code if invoice.course else '-' }}{% if invoice.course %} - {{ invoice.course.title }}{% endif %}</td><td>{{ invoice.billing_month or '-' }}</td><td>৳{{ '%.2f'|format(invoice.amount|float) }}</td><td>{{ invoice.due_date.strftime('%d %b %Y') if invoice.due_date else '—' }}</td><td><span class="badge {% if invoice.status == 'paid' %}text-bg-success{% elif invoice.status == 'overdue' %}text-bg-danger{% elif invoice.status == 'partial' %}text-bg-warning{% else %}text-bg-secondary{% endif %}">{{ invoice.status|title }}</span></td><td class="text-end"><div class="d-flex gap-2 justify-content-end flex-wrap"><a class="btn btn-sm btn-outline-primary" href="{{ url_for('finance.edit_invoice', invoice_id=invoice.id) }}">Edit</a>{% if invoice.status != 'paid' %}<form method="post" action="{{ url_for('finance.mark_paid', invoice_id=invoice.id) }}"><button class="btn btn-sm btn-outline-success">Mark Paid</button></form>{% endif %}<form method="post" action="{{ url_for('finance.delete_invoice', invoice_id=invoice.id) }}" onsubmit="return confirm('Delete this invoice?');"><button class="btn btn-sm btn-outline-danger">Delete</button></form></div></td></tr>{% else %}<tr><td colspan="8" class="text-center text-muted py-4">No invoices found.</td></tr>{% endfor %}</tbody></table></div></div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% from 'macros/cards.html' import stat_card %}
+{% block title %}Aureline Academy | Home{% endblock %}
+{% block content %}
+<section class="hero-section py-5">
+  <div class="container py-4">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-7">
+        <span class="badge rounded-pill text-bg-warning mb-3">Aureline Academy School Management Portal</span>
+        <h1 class="display-5 fw-bold mb-3">Modular school operations, online learning and academic communication in one place.</h1>
+        <p class="lead text-muted mb-4">Students can submit registration requests online. Every new account remains pending until Aureline Admin approves it, so the school stays in full control of portal access.</p>
+        <div class="d-flex gap-3 flex-wrap">
+          <a class="btn btn-primary btn-lg" href="{{ url_for('auth.login') }}">Open Portal</a>
+          <a class="btn btn-outline-primary btn-lg" href="{{ url_for('auth.register') }}">Request Registration</a>
+          {% if current_user.is_authenticated and current_user.role == 'admin' %}
+          <a class="btn btn-outline-dark btn-lg" href="{{ url_for('auth.pending_users') }}">Review Registrations</a>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="card border-0 shadow rounded-4">
+          <div class="card-body p-4">
+            <h3 class="h5 fw-bold mb-3">Quick stats</h3>
+            <div class="row g-3">
+              {% for label, value in stats.items() %}
+                {{ stat_card(label, value) }}
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="py-5 bg-light">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+          <div class="card-body p-4">
+            <h2 class="h4 fw-bold">Access control</h2>
+            <ul class="mb-0 text-muted">
+              <li>Public registration for students only</li>
+              <li>Admin approval before first login</li>
+              <li>Admin can activate, deactivate, approve, or reject users</li>
+              <li>Full admin panel remains available for complete system control</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+          <div class="card-body p-4">
+            <h2 class="h4 fw-bold">Currently Running Courses & Classes</h2>
+            {% if course_cards %}
+              <div class="row g-3">
+                {% for item in course_cards %}
+                <div class="col-md-6">
+                  <div class="border rounded-4 p-3 h-100">
+                    <div class="fw-semibold">{{ item.code }} - {{ item.title }}</div>
+                    <div class="small text-muted">{{ item.class_name }}</div>
+                    <div class="small mt-2">Time: {{ item.time }}</div>
+                    <div class="small">Students: {{ item.students }}</div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="text-muted mb-0">No running course data is available yet.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+          <div class="card-body p-4">
+            <h2 class="h4 fw-bold">Latest notices</h2>
+            {% if notices %}
+              <ul class="list-group list-group-flush">
+                {% for notice in notices %}
+                <li class="list-group-item px-0">
+                  <div class="fw-semibold">{{ notice.title }}</div>
+                  <div class="small text-muted">{{ notice.published_on.strftime('%d %b %Y') }} · Audience: {{ notice.audience|title }}</div>
+                  <div>{{ notice.message }}</div>
+                </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-muted mb-0">No notices yet. Seed the demo database to populate the portal.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

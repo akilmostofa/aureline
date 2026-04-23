@@ -1,0 +1,75 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<div class="container-fluid mt-3">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2 class="mb-1">Aureline Admin Panel</h2>
+      <p class="text-muted mb-0">Manage users, academics, finance, library, notices, and chatbot inquiries from one place.</p>
+    </div>
+    <div class="col-md-4 text-md-right mt-3 mt-md-0">
+      <a class="btn btn-primary" href="{{ url_for('dashboard.admin_hub') }}">Open Control Center</a>
+      <a class="btn btn-outline-primary" href="{{ url_for('exports.finance_pdf') }}">Finance PDF</a>
+      <a class="btn btn-outline-secondary" href="{{ url_for('auth.logout') }}">Logout</a>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-3 mb-3"><div class="card"><div class="card-body"><h6 class="text-muted">Total Users</h6><h3>{{ stats.users }}</h3></div></div></div>
+    <div class="col-md-3 mb-3"><div class="card"><div class="card-body"><h6 class="text-muted">Students</h6><h3>{{ stats.students }}</h3></div></div></div>
+    <div class="col-md-3 mb-3"><div class="card"><div class="card-body"><h6 class="text-muted">Teachers</h6><h3>{{ stats.teachers }}</h3></div></div></div>
+    <div class="col-md-3 mb-3"><div class="card"><div class="card-body"><h6 class="text-muted">Courses</h6><h3>{{ stats.courses }}</h3></div></div></div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-4 mb-3"><div class="card border-warning"><div class="card-body"><h6 class="text-muted">Pending Registrations</h6><h3>{{ stats.pending_users }}</h3><a href="{{ url_for('auth.pending_users') }}">Review users</a></div></div></div>
+    <div class="col-md-4 mb-3"><div class="card border-info"><div class="card-body"><h6 class="text-muted">Pending Payments</h6><h3>{{ stats.pending_payments }}</h3><a href="{{ url_for('finance.course_requests_admin') }}">Review payments</a></div></div></div>
+    <div class="col-md-4 mb-3"><div class="card border-danger"><div class="card-body"><h6 class="text-muted">Unpaid Invoices</h6><h3>{{ stats.unpaid_invoices }}</h3><a href="{{ url_for('finance.overview') }}">Open finance</a></div></div></div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-6 mb-4">
+      <div class="card">
+        <div class="card-header"><strong>Recent registrations</strong></div>
+        <div class="card-body p-0">
+          <table class="table table-striped mb-0">
+            <thead><tr><th>Name</th><th>Role</th><th>Status</th></tr></thead>
+            <tbody>
+              {% for user in recent_users %}
+              <tr>
+                <td>{{ user.full_name }}</td>
+                <td>{{ user.role|title }}</td>
+                <td>{{ user.approval_status|title }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="3" class="text-center text-muted">No registrations yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+      <div class="card">
+        <div class="card-header"><strong>Recent course payment requests</strong></div>
+        <div class="card-body p-0">
+          <table class="table table-striped mb-0">
+            <thead><tr><th>Requester</th><th>Course</th><th>Status</th></tr></thead>
+            <tbody>
+              {% for item in recent_requests %}
+              <tr>
+                <td>{{ item.requester.full_name if item.requester else '-' }}</td>
+                <td>{{ item.course.title if item.course else '-' }}</td>
+                <td>{{ item.status|replace('_', ' ')|title }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="3" class="text-center text-muted">No payment requests yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

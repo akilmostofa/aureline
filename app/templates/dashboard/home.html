@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% from 'macros/cards.html' import stat_card %}
+{% block title %}Dashboard | Aureline Academy{% endblock %}
+{% block content %}
+<section class="py-4">
+  <div class="container">
+    {% if mode == 'student' %}
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <div>
+        <h1 class="h3 fw-bold mb-1">Student Dashboard</h1>
+        <p class="text-muted mb-0">Attendance, payment updates, class test results, and enrollment status in one place.</p>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-outline-primary" href="{{ url_for('exports.student_dashboard_pdf') }}">Download PDF</a>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      {{ stat_card('Present Classes', dashboard_totals.attendance_present) }}
+      {{ stat_card('Absent Classes', dashboard_totals.attendance_absent) }}
+      {{ stat_card('Open Payments', dashboard_totals.open_payments) }}
+      {{ stat_card('Test Results', dashboard_totals.tests_recorded) }}
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body p-4">
+          <h2 class="h5 fw-bold mb-3">Student Profile</h2>
+          <div class="small text-muted mb-1">Student ID</div><div class="fw-semibold mb-2">{{ student.admission_no }}</div>
+          <div class="small text-muted mb-1">Class</div><div class="fw-semibold mb-2">{{ student.class_name }}{% if student.section %} - {{ student.section }}{% endif %}</div>
+          <div class="small text-muted mb-1">Current School</div><div class="fw-semibold mb-2">{{ student.current_school_name or '-' }}</div>
+          <div class="small text-muted mb-1">Guardian</div><div class="fw-semibold mb-2">{{ student.guardian_name }}</div>
+          <div class="small text-muted mb-1">Fee Status</div><span class="badge text-bg-secondary">{{ student.fee_status|title }}</span>
+        </div></div>
+      </div>
+      <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3"><h2 class="h5 fw-bold mb-0">Subject-wise Payment Updates</h2><a class="btn btn-sm btn-outline-primary" href="{{ url_for('finance.portal') }}">Open Payment Center</a></div>
+          <div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Subject</th><th>Billing Month</th><th>Amount</th><th>Due Date</th><th>Status</th></tr></thead><tbody>
+            {% for invoice in payment_updates %}
+            <tr>
+              <td>{{ invoice.course.code if invoice.course else '-' }}{% if invoice.course %} - {{ invoice.course.title }}{% endif %}</td>
+              <td>{{ invoice.billing_month or '-' }}</td>
+              <td>৳{{ '%.2f'|format(invoice.amount|float) }}</td>
+              <td>{{ invoice.due_date.strftime('%d %b %Y') if invoice.due_date else '-' }}</td>
+              <td><span class="badge {% if invoice.status == 'paid' %}text-bg-success{% elif invoice.status == 'partial' %}text-bg-warning{% else %}text-bg-secondary{% endif %}">{{ invoice.status|title }}</span></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center text-muted py-3">No payment updates yet.</td></tr>
+            {% endfor %}
+          </tbody></table></div>
+        </div></div>
+      </div>
+
+      <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4"><div class="card-body p-4">
+          <h2 class="h5 fw-bold mb-3">Enrollment Status by Subject</h2>
+          <div class="row g-3">
+            {% for item in enrollment_cards %}
+            <div class="col-md-6 col-xl-4">
+              <div class="border rounded-4 p-3 h-100 {% if item.status == 'suspended' %}bg-light border-danger{% endif %}">
+                <div class="fw-semibold">{{ item.course.code }} - {{ item.course.title }}</div>
+                <div class="small text-muted">{{ item.course.class_name }} · {{ item.course.schedule_text or 'Schedule TBD' }}</div>
+                <div class="mt-2"><span class="badge {% if item.status == 'active' %}text-bg-success{% else %}text-bg-danger{% endif %}">{{ item.status|title }}</span></div>
+                {% if item.status == 'suspended' %}<div class="small text-danger mt-2">Payment overdue. Enrollment is suspended until Aureline Admin re-activates or payment is cleared.</div>{% endif %}
+              </div>
+            </div>
+            {% else %}
+            <div class="text-muted">No approved subject enrollment yet.</div>
+            {% endfor %}
+          </div>
+        </div></div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body p-4">
+          <h2 class="h5 fw-bold mb-3">Recent Attendance</h2>
+          <div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Date</th><th>Subject</th><th>Status</th></tr></thead><tbody>
+            {% for item in recent_attendance %}
+            <tr><td>{{ item.attended_on.strftime('%d %b %Y') }}</td><td>{{ item.course.code }} - {{ item.course.title }}</td><td><span class="badge text-bg-info">{{ item.status|title }}</span></td></tr>
+            {% else %}
+            <tr><td colspan="3" class="text-center text-muted py-3">No attendance records yet.</td></tr>
+            {% endfor %}
+          </tbody></table></div>
+        </div></div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body p-4">
+          <h2 class="h5 fw-bold mb-3">Class Test Results</h2>
+          <div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Date</th><th>Subject</th><th>Test</th><th>Score</th><th>Grade</th></tr></thead><tbody>
+            {% for result in recent_results %}
+            <tr><td>{{ result.exam_date.strftime('%d %b %Y') }}</td><td>{{ result.course.code }}</td><td>{{ result.test_title }}</td><td>{{ '%.2f'|format(result.obtained_marks|float) }}/{{ '%.2f'|format(result.total_marks|float) }}</td><td>{{ result.grade or '-' }}</td></tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center text-muted py-3">No test results published yet.</td></tr>
+            {% endfor %}
+          </tbody></table></div>
+        </div></div>
+      </div>
+    </div>
+
+    {% elif mode == 'teacher' %}
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <div>
+        <h1 class="h3 fw-bold mb-1">Teacher Dashboard</h1>
+        <p class="text-muted mb-0">Class-wise student list, schedule control, and test result input in one screen.</p>
+      </div>
+      <span class="badge text-bg-primary">{{ teacher.employee_id }}</span>
+    </div>
+    <div class="row g-4">
+      {% for row in teacher_rows %}
+      <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4">
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+              <div>
+                <h2 class="h5 fw-bold mb-1">{{ row.course.code }} - {{ row.course.title }}</h2>
+                <div class="text-muted small">{{ row.course.class_name }} · {{ row.course.schedule_text or 'Schedule TBD' }}</div>
+                <div class="mt-2"><span class="badge {% if row.course.delivery_status == 'running' %}text-bg-success{% else %}text-bg-danger{% endif %}">{{ row.course.delivery_status|title }}</span>{% if row.course.next_schedule_text %}<span class="small ms-2">Next schedule: {{ row.course.next_schedule_text }}</span>{% endif %}</div>
+              </div>
+              <a class="btn btn-sm btn-outline-primary" href="{{ url_for('exports.attendance_pdf', class_name=row.course.class_name) }}">Attendance PDF</a>
+            </div>
+            <div class="row g-4">
+              <div class="col-lg-7">
+                <div class="table-responsive">
+                  <table class="table align-middle">
+                    <thead><tr><th>Student</th><th>Roll</th><th>Class</th><th>Enrollment</th></tr></thead>
+                    <tbody>
+                      {% for student in row.students %}
+                      <tr>
+                        <td>{{ student.name }}</td>
+                        <td>{{ student.roll }}</td>
+                        <td>{{ student.class_name }}</td>
+                        <td><span class="badge {% if student.enrollment_status == 'active' %}text-bg-success{% else %}text-bg-danger{% endif %}">{{ student.enrollment_status|title }}</span></td>
+                      </tr>
+                      {% else %}
+                      <tr><td colspan="4" class="text-center text-muted py-3">No approved students for this subject yet.</td></tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="col-lg-5">
+                <div class="border rounded-4 p-3 mb-3 bg-light">
+                  <h3 class="h6 fw-bold">Suspend / Reschedule Class</h3>
+                  <form method="post" action="{{ url_for('dashboard.teacher_update_schedule', course_id=row.course.id) }}">
+                    <div class="mb-2">
+                      <label class="form-label">Status</label>
+                      <select class="form-select" name="action">
+                        <option value="running" {% if row.course.delivery_status == 'running' %}selected{% endif %}>Running</option>
+                        <option value="suspended" {% if row.course.delivery_status == 'suspended' %}selected{% endif %}>Suspend This Class</option>
+                      </select>
+                    </div>
+                    <div class="mb-2"><label class="form-label">Next Schedule</label><input class="form-control" name="next_schedule_text" value="{{ row.course.next_schedule_text or '' }}" placeholder="e.g. Fri 5:00 PM"></div>
+                    <div class="mb-2"><label class="form-label">Note</label><textarea class="form-control" name="suspension_note" rows="2" placeholder="Reason or reschedule note">{{ row.course.suspension_note or '' }}</textarea></div>
+                    <button class="btn btn-outline-primary btn-sm">Save Schedule</button>
+                  </form>
+                </div>
+                <div class="border rounded-4 p-3 bg-light">
+                  <h3 class="h6 fw-bold">Upload Class Test Result</h3>
+                  <form method="post" action="{{ url_for('dashboard.teacher_add_result', course_id=row.course.id) }}">
+                    <div class="mb-2"><label class="form-label">Student</label><select class="form-select" name="student_id" required>{% for student in row.students %}<option value="{{ student.id }}">{{ student.name }} ({{ student.roll }})</option>{% endfor %}</select></div>
+                    <div class="mb-2"><label class="form-label">Test Title</label><input class="form-control" name="test_title" placeholder="Class Test 1" required></div>
+                    <div class="row g-2">
+                      <div class="col-6"><label class="form-label">Obtained</label><input class="form-control" name="obtained_marks" type="number" step="0.01" required></div>
+                      <div class="col-6"><label class="form-label">Total</label><input class="form-control" name="total_marks" type="number" step="0.01" value="100" required></div>
+                    </div>
+                    <div class="row g-2 mt-1">
+                      <div class="col-6"><label class="form-label">Grade</label><input class="form-control" name="grade"></div>
+                      <div class="col-6"><label class="form-label">Exam Date</label><input class="form-control" name="exam_date" type="date"></div>
+                    </div>
+                    <div class="mt-2"><label class="form-label">Remarks</label><textarea class="form-control" name="remarks" rows="2"></textarea></div>
+                    <button class="btn btn-primary btn-sm mt-2" {% if not row.students %}disabled{% endif %}>Save Result</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="col-12"><div class="alert alert-info rounded-4">No courses are assigned to this teacher yet.</div></div>
+      {% endfor %}
+
+      <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4"><div class="card-body p-4">
+          <h2 class="h5 fw-bold mb-3">Recently Controlled Tests</h2>
+          <div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Date</th><th>Student</th><th>Subject</th><th>Test</th><th>Score</th></tr></thead><tbody>
+            {% for item in controlled_tests %}
+            <tr><td>{{ item.exam_date.strftime('%d %b %Y') }}</td><td>{{ item.student.user.full_name }}</td><td>{{ item.course.code }}</td><td>{{ item.test_title }}</td><td>{{ '%.2f'|format(item.obtained_marks|float) }}/{{ '%.2f'|format(item.total_marks|float) }}</td></tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center text-muted py-3">No test inputs yet.</td></tr>
+            {% endfor %}
+          </tbody></table></div>
+        </div></div>
+      </div>
+    </div>
+
+    {% else %}
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <div><h1 class="h3 fw-bold mb-1">Dashboard</h1><p class="text-muted mb-0">Aureline Academy operational summary.</p></div>
+      {% if current_user.role == 'admin' %}<a class="btn btn-primary" href="{{ url_for('dashboard.admin_hub') }}">Open Control Center</a>{% endif %}
+    </div>
+    <div class="row g-3 mb-4">
+      {% for label, value in stats.items() %}
+        {{ stat_card(label.replace('_', ' ')|title, value) }}
+      {% endfor %}
+      {% if current_user.role == 'admin' %}
+        {{ stat_card('Pending Registrations', pending_registrations) }}
+      {% endif %}
+    </div>
+    <div class="row g-4">
+      <div class="col-lg-6"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body p-4"><h2 class="h5 fw-bold mb-3">Latest Notices</h2><ul class="list-group list-group-flush">{% for notice in latest_notices %}<li class="list-group-item px-0"><div class="fw-semibold">{{ notice.title }}</div><div class="small text-muted">{{ notice.published_on.strftime('%d %b %Y') }}</div><div>{{ notice.message }}</div></li>{% else %}<li class="list-group-item px-0 text-muted">No notices published.</li>{% endfor %}</ul></div></div></div>
+      <div class="col-lg-6"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body p-4"><h2 class="h5 fw-bold mb-3">Upcoming / Open Invoices</h2><ul class="list-group list-group-flush">{% for invoice in latest_invoices %}<li class="list-group-item px-0"><div class="fw-semibold">{{ invoice.invoice_no }} · {{ invoice.student.user.full_name }}</div><div class="small text-muted">Due {{ invoice.due_date.strftime('%d %b %Y') }} · Status: {{ invoice.status|title }}</div></li>{% else %}<li class="list-group-item px-0 text-muted">No invoice data available.</li>{% endfor %}</ul></div></div></div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Reports | Aureline Academy{% endblock %}
+{% block content %}
+<section class="py-4">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+      <div>
+        <h1 class="h3 fw-bold mb-1">Reports & Analytics</h1>
+        <p class="text-muted mb-0">Dynamic academic and finance summaries for Aureline Academy.</p>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <form class="d-flex gap-2 flex-wrap" method="get">
+          <select class="form-select" name="class_name" onchange="this.form.submit()">
+            <option value="all" {% if selected_class == 'all' %}selected{% endif %}>All Classes</option>
+            {% for class_name in class_options %}
+            <option value="{{ class_name }}" {% if selected_class == class_name %}selected{% endif %}>{{ class_name }}</option>
+            {% endfor %}
+          </select>
+        </form>
+        <a class="btn btn-outline-primary" href="{{ url_for('exports.reports_summary_pdf', class_name=selected_class) }}">Download PDF</a>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-3"><div class="card border-0 shadow-sm rounded-4"><div class="card-body"><div class="text-muted small">Students</div><div class="display-6 fw-bold">{{ totals.students }}</div></div></div></div>
+      <div class="col-md-3"><div class="card border-0 shadow-sm rounded-4"><div class="card-body"><div class="text-muted small">Courses</div><div class="display-6 fw-bold">{{ totals.courses }}</div></div></div></div>
+      <div class="col-md-3"><div class="card border-0 shadow-sm rounded-4"><div class="card-body"><div class="text-muted small">Collected Fees</div><div class="display-6 fw-bold">৳{{ '%.2f'|format(totals.paid_amount) }}</div></div></div></div>
+      <div class="col-md-3"><div class="card border-0 shadow-sm rounded-4"><div class="card-body"><div class="text-muted small">Open Requests</div><div class="display-6 fw-bold">{{ totals.open_requests }}</div></div></div></div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-lg-6"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body p-4"><h2 class="h5 fw-bold mb-3">Invoice Status</h2><canvas id="invoiceStatusChart" height="180"></canvas></div></div></div>
+      <div class="col-lg-6"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body p-4"><h2 class="h5 fw-bold mb-3">Attendance Status{% if selected_class != 'all' %} · {{ selected_class }}{% endif %}</h2><canvas id="attendanceChart" height="180"></canvas></div></div></div>
+      <div class="col-lg-6"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body p-4"><h2 class="h5 fw-bold mb-3">Monthly Fee Collection</h2><canvas id="monthlyCollectionChart" height="180"></canvas></div></div></div>
+      <div class="col-lg-6"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body p-4"><h2 class="h5 fw-bold mb-3">Course Request Pipeline</h2><canvas id="requestStatusChart" height="180"></canvas></div></div></div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body p-4"><h2 class="h5 fw-bold mb-3">Students by Class</h2><div class="list-group list-group-flush">{% for label, count in class_breakdown %}<div class="list-group-item px-0 d-flex justify-content-between"><span>{{ label }}</span><strong>{{ count }}</strong></div>{% else %}<div class="text-muted">No student data.</div>{% endfor %}</div></div></div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body p-4"><h2 class="h5 fw-bold mb-3">Most Requested Courses</h2><div class="list-group list-group-flush">{% for code, title, count in course_enrollments %}<div class="list-group-item px-0 d-flex justify-content-between align-items-center gap-3"><div><div class="fw-semibold">{{ code }}</div><div class="small text-muted">{{ title }}</div></div><span class="badge text-bg-primary">{{ count }} request{{ '' if count == 1 else 's' }}</span></div>{% else %}<div class="text-muted">No course request data.</div>{% endfor %}</div></div></div>
+      </div>
+      <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4"><div class="card-body p-4"><h2 class="h5 fw-bold mb-3">Class Test Performance Snapshot</h2><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Subject Code</th><th>Average Obtained</th><th>Average Total</th><th>Published Tests</th></tr></thead><tbody>{% for code, avg_obtained, avg_total, count in test_result_summary %}<tr><td>{{ code }}</td><td>{{ '%.2f'|format(avg_obtained|float) }}</td><td>{{ '%.2f'|format(avg_total|float) }}</td><td>{{ count }}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted py-3">No test results found.</td></tr>{% endfor %}</tbody></table></div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const invoiceLabels = {{ chart_data.invoice_labels|tojson }};
+  const invoiceValues = {{ chart_data.invoice_values|tojson }};
+  const attendanceLabels = {{ chart_data.attendance_labels|tojson }};
+  const attendanceValues = {{ chart_data.attendance_values|tojson }};
+  const monthlyLabels = {{ chart_data.monthly_labels|tojson }};
+  const monthlyValues = {{ chart_data.monthly_values|tojson }};
+  const requestLabels = {{ chart_data.request_labels|tojson }};
+  const requestValues = {{ chart_data.request_values|tojson }};
+
+  if (document.getElementById('invoiceStatusChart')) {
+    new Chart(document.getElementById('invoiceStatusChart'), { type: 'doughnut', data: { labels: invoiceLabels, datasets: [{ data: invoiceValues }] }, options: { plugins: { legend: { position: 'bottom' } } } });
+  }
+  if (document.getElementById('attendanceChart')) {
+    new Chart(document.getElementById('attendanceChart'), { type: 'bar', data: { labels: attendanceLabels, datasets: [{ label: 'Attendance Records', data: attendanceValues }] }, options: { responsive: true, plugins: { legend: { display: false } } } });
+  }
+  if (document.getElementById('monthlyCollectionChart')) {
+    new Chart(document.getElementById('monthlyCollectionChart'), { type: 'line', data: { labels: monthlyLabels, datasets: [{ label: 'Collected Fees', data: monthlyValues, tension: 0.3 }] }, options: { responsive: true } });
+  }
+  if (document.getElementById('requestStatusChart')) {
+    new Chart(document.getElementById('requestStatusChart'), { type: 'pie', data: { labels: requestLabels, datasets: [{ data: requestValues }] }, options: { plugins: { legend: { position: 'bottom' } } } });
+  }
+</script>
+{% endblock %}

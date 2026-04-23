@@ -1,0 +1,10 @@
+{% macro stat_card(label, value) %}
+<div class="col-sm-6 col-xl-3">
+  <div class="card border-0 shadow-sm rounded-4 h-100">
+    <div class="card-body">
+      <div class="text-muted text-uppercase small">{{ label }}</div>
+      <div class="display-6 fw-bold">{{ value }}</div>
+    </div>
+  </div>
+</div>
+{% endmacro %}
